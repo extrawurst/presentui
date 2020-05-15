@@ -1,5 +1,5 @@
 use crossterm::{
-    cursor::{Hide, MoveTo, Show},
+    cursor::{Hide, MoveTo, Show, self},
     event::{self, Event, KeyCode, KeyEvent},
     queue,
     terminal::{self, disable_raw_mode, enable_raw_mode, Clear, ClearType},
@@ -36,8 +36,10 @@ enum FileTypes {
     Code(String),
 }
 
-fn longest_line(s: &str) -> usize {
-    1 + s.lines().fold(0, |acc, l| acc.max(l.len()))
+fn longest_line(s: &str) -> (usize,usize) {
+    let w = 1 + s.lines().fold(0, |acc, l| acc.max(l.len()));
+
+    (w,s.lines().count())
 }
 
 impl FileTypes {
@@ -65,9 +67,9 @@ impl FileTypes {
             FileTypes::Markdown(path) => {
                 let (width, height) = terminal::size().unwrap();
                 let markdown = fs::read_to_string(Path::new(path))?;
-                let text_width = longest_line(markdown.as_str()) as u16;
+                let (text_w,_) = longest_line(markdown.as_str());
 
-                let area_w = text_width.min(width - (margin as u16 * 2));
+                let area_w = text_w.min(width as usize- (margin*2)) as u16;
                 let area_h = height - (margin as u16 * 2);
 
                 let x = (width - area_w) / 2;
@@ -90,22 +92,30 @@ impl FileTypes {
                 w.write("closed".as_bytes())?;
             }
             FileTypes::Code(path) => {
-                // let (width, height) = terminal::size().unwrap();
+                let (width, height) = terminal::size().unwrap();
                 let content = fs::read_to_string(Path::new(path))?;
-                // let text_width = longest_line(content.as_str());
+                let text_size = longest_line(content.as_str()); 
+                let x = (width - text_size.0 as u16)/2;
+                let y = (height - text_size.1 as u16)/2;
 
                 // Load these once at the start of your program
                 let ps = SyntaxSet::load_defaults_newlines();
                 let ts = ThemeSet::load_defaults();
 
                 let syntax = ps.find_syntax_by_extension("rs").unwrap();
-                let mut h = HighlightLines::new(syntax, &ts.themes["Solarized (light)"]);
+                let mut highlighter = HighlightLines::new(syntax, &ts.themes["Solarized (light)"]);
 
+                let mut lines_drawn = 0;
                 for line in LinesWithEndings::from(content.as_str()) {
-                    let ranges: Vec<(Style, &str)> = h.highlight(line, &ps);
+                    let ranges: Vec<(Style, &str)> = highlighter.highlight(line, &ps);
                     let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
-                    w.write(format!("{}\r", escaped).as_bytes())?;
+                    w.queue(cursor::MoveTo(x,y+lines_drawn))?;
+                    w.write(format!("{}", escaped).as_bytes())?;
+                    lines_drawn+=1;
                 }
+
+                w.queue(cursor::MoveTo(0,0))?;
+                w.flush()?;
             }
             FileTypes::FIGlet(txt) => {
                 //TODO: draw manually to allow centering
@@ -121,7 +131,7 @@ impl FileTypes {
     }
 }
 
-fn main_loop(w: &mut impl Write, slides: &Slides) -> Result<()> {
+fn present(w: &mut impl Write, slides: &Slides) -> Result<()> {
     let mut idx = 0_usize;
     let mut margin = 2_usize;
 
@@ -222,7 +232,7 @@ fn main() -> Result<()> {
     enable_raw_mode()?;
     queue!(w, Hide)?;
 
-    main_loop(&mut w, &slides)?;
+    present(&mut w, &slides)?;
 
     queue!(w, Show)?;
     disable_raw_mode()?;

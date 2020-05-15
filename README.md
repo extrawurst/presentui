@@ -8,7 +8,6 @@ checkout the `example.ron` and the `assets` folder
 
 simply run by:
 ```
-cargo run
+cargo run -- -f example.ron
 ```
-
-it will look for an `example.ron` then you can navigate using `up`/`down` keys and exit using `Esc`
+then you can navigate using `up`/`down` keys and exit using `Esc`

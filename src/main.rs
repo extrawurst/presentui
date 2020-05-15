@@ -10,6 +10,7 @@ use fs::File;
 use io::stderr;
 use ron::de::from_reader;
 use serde::Deserialize;
+use clap::{Arg, App};
 use std::{
     fs,
     io::{self, Write},
@@ -201,33 +202,29 @@ struct Slides {
 }
 
 fn main() -> Result<()> {
-    let f = File::open("example.ron").expect("Failed opening file");
-    let slides: Slides = from_reader(f).expect("Failed to parse ron");
+    let matches = App::new("presentui")
+        .version("0.1.0")
+        .author("Stephan D. <presentui@extrawurst.org>")
+        .about("terminal presenting")
+        .arg(Arg::with_name("file")
+                 .short("f")
+                 .long("file")
+                 .takes_value(true)
+                 .required(true)
+                 .help("input file (*.ron)"))
+        .get_matches();
 
-    // let files = &[
-    //     FileTypes::Print("hello world"),
-    //     FileTypes::Code("assets/test.rs"),
-    //     FileTypes::Markdown("assets/test2.md"),
-    //     FileTypes::Markdown("assets/test_table.md"),
-    //     FileTypes::FIGlet("hello world"),
-    //     FileTypes::GifAnimation("assets/giphy3.gif"),
-    //     FileTypes::Markdown("test.md"),
-    //     FileTypes::Image("assets/logo.png"),
-    //     FileTypes::Open("assets/s00-diff.png"),
-    //     FileTypes::GifAnimation("assets/giphy.gif"),
-    //     FileTypes::Print("end"),
-    // ];
+    let f = File::open(matches.value_of("file").unwrap()).expect("Failed opening file");
+    let slides: Slides = from_reader(f).expect("Failed to parse ron");
 
     let mut w = stderr();
 
     enable_raw_mode()?;
-
     queue!(w, Hide)?;
 
     main_loop(&mut w, &slides)?;
 
     queue!(w, Show)?;
-
     disable_raw_mode()?;
 
     Ok(())

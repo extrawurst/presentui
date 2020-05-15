@@ -72,8 +72,8 @@ impl FileTypes {
                 let area_w = text_w.min(width as usize- (margin*2)) as u16;
                 let area_h = height - (margin as u16 * 2);
 
-                let x = (width - area_w) / 2;
-                let y = (height - area_h) / 2;
+                let x = 0.max((width - area_w) / 2);
+                let y = 0.max((height - area_h) / 2);
 
                 MadSkin::default()
                     .write_in_area(&markdown, &Area::new(x, y, area_w, area_h))

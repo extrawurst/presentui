@@ -1,0 +1,13 @@
+[package]
+name = "presentui"
+version = "0.1.0"
+authors = ["Stephan Dilly <dilly.stephan@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+termimad = "0.8"
+crossterm = "0.17"
+syntect = "4.1"
+ron = "0.5"
+figlet-rs = "0.1"
+serde = { version = "1.0", features = ["serde_derive"] }

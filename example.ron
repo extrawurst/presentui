@@ -1,0 +1,15 @@
+(
+    files:[
+        Print("hello world"),
+        Code("assets/test.rs"),
+        Markdown("assets/test2.md"),
+        Markdown("assets/test_table.md"),
+        FIGlet("hello world"),
+        GifAnimation("assets/giphy3.gif"),
+        Markdown("assets/test.md"),
+        Image("assets/logo.png"),
+        Open("assets/s00-diff.png"),
+        GifAnimation("assets/giphy.gif"),
+        Print("end"),
+    ]
+)

@@ -10,4 +10,6 @@ simply run by:
 ```
 cargo run -- -f example.ron
 ```
-then you can navigate using `up`/`down` keys and exit using `Esc`
+Navigate using `up`/`down` keys.
+Open the current slide using system viewer: `enter`.
+Exit using `Esc`.

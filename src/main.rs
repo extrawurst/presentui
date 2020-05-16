@@ -43,9 +43,24 @@ fn longest_line(s: &str) -> (usize,usize) {
 }
 
 impl FileTypes {
+    fn action(&self, _w: &mut impl Write) -> Result<()> {
+        match self {
+            FileTypes::Open(path) | FileTypes::Image(path) => {
+                Command::new("open")
+                    .arg("-W")
+                    .arg("-F")
+                    .arg("-n")
+                    .arg(path)
+                    .status()?;
+            }
+            _ => (),
+        }
+
+        Ok(())
+    }
+
     fn show(&self, w: &mut impl Write, margin: usize) -> Result<()> {
         match self {
-            //TODO: open the file using enter
             FileTypes::GifAnimation(path) => {
                 disable_raw_mode()?;
                 Command::new("viu").arg("-1").arg(path).status()?;
@@ -62,7 +77,7 @@ impl FileTypes {
                 enable_raw_mode()?;
             }
             FileTypes::Print(txt) => {
-                w.write(txt.as_bytes())?;
+                w.write_all(txt.as_bytes())?;
             }
             FileTypes::Markdown(path) => {
                 let (width, height) = terminal::size().unwrap();
@@ -80,16 +95,8 @@ impl FileTypes {
                     .unwrap();
             }
             FileTypes::Open(path) => {
-                w.write(format!("opening: {}\n", path).as_bytes())?;
-
-                Command::new("open")
-                    .arg("-W")
-                    .arg("-F")
-                    .arg("-n")
-                    .arg(path)
-                    .status()?;
-
-                w.write("closed".as_bytes())?;
+                w.write_all(format!("opening: {}\n\r", path).as_bytes())?;
+                w.write_all(b"enter to open")?;
             }
             FileTypes::Code(path) => {
                 let (width, height) = terminal::size().unwrap();
@@ -105,13 +112,11 @@ impl FileTypes {
                 let syntax = ps.find_syntax_by_extension("rs").unwrap();
                 let mut highlighter = HighlightLines::new(syntax, &ts.themes["Solarized (light)"]);
 
-                let mut lines_drawn = 0;
-                for line in LinesWithEndings::from(content.as_str()) {
+                for (idx,line) in LinesWithEndings::from(content.as_str()).enumerate() {
                     let ranges: Vec<(Style, &str)> = highlighter.highlight(line, &ps);
                     let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
-                    w.queue(cursor::MoveTo(x,y+lines_drawn))?;
-                    w.write(format!("{}", escaped).as_bytes())?;
-                    lines_drawn+=1;
+                    w.queue(cursor::MoveTo(x,y+idx as u16))?;
+                    w.write_all(escaped.to_string().as_bytes())?;
                 }
 
                 w.queue(cursor::MoveTo(0,0))?;
@@ -122,7 +127,7 @@ impl FileTypes {
                 let standard_font = FIGfont::standand().unwrap();
                 let figure = standard_font.convert(txt).unwrap();
                 disable_raw_mode()?;
-                w.write(format!("{}", figure).as_bytes())?;
+                w.write_all(figure.to_string().as_bytes())?;
                 enable_raw_mode()?;
             }
         }
@@ -160,6 +165,11 @@ fn present(w: &mut impl Write, slides: &Slides) -> Result<()> {
                     margin = margin.saturating_sub(1)
                 }
             }
+            Input::Action => {
+                if let Some(file) = slides.files.get(idx) {
+                    file.action(w)?;
+                }
+            },
             Input::None => (),
         }
     }
@@ -172,6 +182,7 @@ enum Input {
     Previous,
     Next,
     Margin(bool),
+    Action,
     Quit,
 }
 
@@ -198,6 +209,9 @@ fn read_input() -> Result<Input> {
             KeyEvent {
                 code: KeyCode::Esc, ..
             } => Ok(Input::Quit),
+            KeyEvent {
+                code: KeyCode::Enter, ..
+            } => Ok(Input::Action),
 
             _ => Ok(Input::None),
         };

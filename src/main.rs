@@ -53,6 +53,11 @@ impl FileTypes {
                     .arg(path)
                     .status()?;
             }
+            FileTypes::GifAnimation(path) => {
+                disable_raw_mode()?;
+                Command::new("viu").arg("-1").arg(path).status()?;
+                enable_raw_mode()?;
+            }
             _ => (),
         }
 
@@ -63,7 +68,7 @@ impl FileTypes {
         match self {
             FileTypes::GifAnimation(path) => {
                 disable_raw_mode()?;
-                Command::new("viu").arg("-1").arg(path).status()?;
+                Command::new("viu").arg("-s").arg(path).status()?;
                 enable_raw_mode()?;
             }
             FileTypes::Image(path) => {

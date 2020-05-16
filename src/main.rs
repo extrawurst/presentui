@@ -23,8 +23,6 @@ use syntect::parsing::SyntaxSet;
 use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
 use termimad::{Area, MadSkin};
 
-//TODO: https://crates.io/crates/syntect
-
 #[derive(Debug, Deserialize)]
 enum FileTypes {
     Markdown(String),
@@ -64,6 +62,21 @@ impl FileTypes {
         Ok(())
     }
 
+    fn write_text(w: &mut impl Write, txt:&String) -> Result<()> {
+        let (width, height) = terminal::size().unwrap();
+        let top = height.saturating_sub(txt.lines().count() as u16)  /2;
+        
+        for (idx,l) in txt.lines().enumerate() {
+            let x = width.saturating_sub(l.len() as u16)  /2;
+            w.queue(cursor::MoveTo(x,top + idx as u16))?;
+            w.write_all(l.as_bytes())?;
+        }
+        
+        w.flush()?;
+
+        Ok(())
+    }
+
     fn show(&self, w: &mut impl Write, margin: usize) -> Result<()> {
         match self {
             FileTypes::GifAnimation(path) => {
@@ -82,7 +95,7 @@ impl FileTypes {
                 enable_raw_mode()?;
             }
             FileTypes::Print(txt) => {
-                w.write_all(txt.as_bytes())?;
+                Self::write_text(w,txt)?;
             }
             FileTypes::Markdown(path) => {
                 let (width, height) = terminal::size().unwrap();
@@ -100,8 +113,8 @@ impl FileTypes {
                     .unwrap();
             }
             FileTypes::Open(path) => {
-                w.write_all(format!("opening: {}\n\r", path).as_bytes())?;
-                w.write_all(b"enter to open")?;
+                let txt = format!("External file:\n{}\n\npress enter to open",path);
+                Self::write_text(w, &txt)?;
             }
             FileTypes::Code(path) => {
                 let (width, height) = terminal::size().unwrap();

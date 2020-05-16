@@ -36,7 +36,7 @@ enum FileTypes {
     Code(String),
 }
 
-fn longest_line(s: &str) -> (usize,usize) {
+fn text_size(s: &str) -> (usize,usize) {
     let w = 1 + s.lines().fold(0, |acc, l| acc.max(l.len()));
 
     (w,s.lines().count())
@@ -87,7 +87,7 @@ impl FileTypes {
             FileTypes::Markdown(path) => {
                 let (width, height) = terminal::size().unwrap();
                 let markdown = fs::read_to_string(Path::new(path))?;
-                let (text_w,_) = longest_line(markdown.as_str());
+                let (text_w,_) = text_size(markdown.as_str());
 
                 let area_w = text_w.min(width as usize- (margin*2)) as u16;
                 let area_h = height - (margin as u16 * 2);
@@ -106,7 +106,7 @@ impl FileTypes {
             FileTypes::Code(path) => {
                 let (width, height) = terminal::size().unwrap();
                 let content = fs::read_to_string(Path::new(path))?;
-                let text_size = longest_line(content.as_str()); 
+                let text_size = text_size(content.as_str()); 
                 let x = (width - text_size.0 as u16)/2;
                 let y = (height - text_size.1 as u16)/2;
 

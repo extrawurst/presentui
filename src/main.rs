@@ -44,12 +44,15 @@ impl FileTypes {
     fn action(&self, _w: &mut impl Write) -> Result<()> {
         match self {
             FileTypes::Open(path) | FileTypes::Image(path) => {
-                Command::new("open")
+                #[cfg(target_os = "linux")]
+                Command::new("xdg-open").arg(path).output()?;
+                #[cfg(target_os = "macos")]
+                Command::new("xdg-open")
                     .arg("-W")
                     .arg("-F")
                     .arg("-n")
                     .arg(path)
-                    .status()?;
+                    .output()?;
             }
             FileTypes::GifAnimation(path) => {
                 disable_raw_mode()?;

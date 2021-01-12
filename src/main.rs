@@ -47,7 +47,7 @@ impl FileTypes {
                 #[cfg(target_os = "linux")]
                 Command::new("xdg-open").arg(path).output()?;
                 #[cfg(target_os = "macos")]
-                Command::new("xdg-open")
+                Command::new("open")
                     .arg("-W")
                     .arg("-F")
                     .arg("-n")
